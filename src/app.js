@@ -1,4 +1,4 @@
-import { createDemoApi, createHttpApi, normalizeTasks } from "./api.js";
+import { createDemoApi, createDraftPlan, createHttpApi, normalizeTasks } from "./api.js";
 
 const config = window.APP_CONFIG ?? { API_BASE_URL: "http://localhost:8000", DEMO_MODE: true };
 const api = config.DEMO_MODE ? createDemoApi() : createHttpApi(config.API_BASE_URL);
@@ -30,7 +30,7 @@ const elements = {
   workForm: document.querySelector("#work-form")
 };
 
-const state = { sessionId: null, plan: [], messages: [] };
+const state = { sessionId: null, plan: [], messages: [], isLoading: false };
 
 function formatDate() {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -81,11 +81,25 @@ function appendMessage(role, content) {
   elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
 }
 
+function appendPendingMessage() {
+  const item = document.createElement("article");
+  item.className = "message message-assistant message-pending";
+  item.setAttribute("role", "status");
+  const name = document.createElement("span");
+  name.textContent = "계획 파트너";
+  const body = document.createElement("p");
+  body.textContent = "업무를 확인하고 내일 계획을 만드는 중이에요";
+  item.append(name, body);
+  elements.chatLog.append(item);
+  elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+  return item;
+}
+
 function renderPlan() {
   elements.planList.replaceChildren();
   state.plan.forEach((task, index) => {
     const row = document.createElement("div");
-    row.className = "plan-row";
+    row.className = `plan-row${state.isLoading ? " plan-row-pending" : ""}`;
     row.dataset.id = task.id;
 
     const order = document.createElement("span");
@@ -95,6 +109,7 @@ function renderPlan() {
     const input = document.createElement("input");
     input.type = "text";
     input.value = task.title;
+    input.disabled = state.isLoading;
     input.setAttribute("aria-label", `${index + 1}번째 할 일`);
     input.addEventListener("input", () => {
       task.title = input.value;
@@ -106,6 +121,7 @@ function renderPlan() {
     remove.className = "remove-plan";
     remove.setAttribute("aria-label", `${task.title || "할 일"} 삭제`);
     remove.textContent = "×";
+    remove.disabled = state.isLoading;
     remove.addEventListener("click", () => {
       state.plan = state.plan.filter((item) => item.id !== task.id);
       renderPlan();
@@ -133,6 +149,7 @@ function resetSession() {
   state.sessionId = null;
   state.plan = [];
   state.messages = [];
+  state.isLoading = false;
   elements.chatLog.replaceChildren();
   elements.planList.replaceChildren();
   elements.activePlanner.hidden = true;
@@ -154,16 +171,28 @@ elements.workForm.addEventListener("submit", async (event) => {
   }
 
   showError(elements.formError, "");
+  state.sessionId = null;
+  state.messages = [];
+  state.isLoading = true;
+  state.plan = createDraftPlan(upcomingTasks);
+  elements.chatLog.replaceChildren();
+  openPlanner();
+  renderPlan();
+  const pendingMessage = appendPendingMessage();
   setBusy(elements.submitWork, true, "계획을 준비하는 중");
   try {
     const result = await api.createSession({ completedTasks, upcomingTasks });
     state.sessionId = result.sessionId;
     state.plan = result.plan ?? [];
-    openPlanner();
+    state.isLoading = false;
+    pendingMessage.remove();
     appendMessage("assistant", result.assistantMessage);
     renderPlan();
     localStorage.removeItem("tomorrow-desk-draft");
   } catch (error) {
+    state.isLoading = false;
+    pendingMessage.remove();
+    renderPlan();
     showError(elements.formError, `${error.message} 잠시 후 다시 시도해 주세요.`);
   } finally {
     setBusy(elements.submitWork, false, "");

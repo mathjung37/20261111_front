@@ -197,6 +197,8 @@ button:disabled { cursor: wait; opacity: 0.58; }
 .message-user { margin-left: auto; }
 .message-user span { text-align: right; }
 .message-user p { border-radius: 15px 4px 15px 15px; background: var(--mint); }
+.message-pending p { color: rgba(16,38,37,.7); background: rgba(255,254,250,.82); }
+.message-pending p::after { content: ""; display: inline-block; width: 1.5em; animation: pending-dots 1.2s steps(4, end) infinite; }
 
 .chat-composer { display: grid; grid-template-columns: 1fr 48px; gap: 9px; margin-top: 18px; }
 .chat-composer textarea { min-height: 50px; max-height: 120px; resize: vertical; padding: 14px 16px; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; color: white; background: rgba(255,255,255,.08); line-height: 1.5; }
@@ -209,6 +211,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
 .plan-divider::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,.16); }
 .plan-list { display: grid; gap: 2px; }
 .plan-row { display: grid; grid-template-columns: 38px 1fr 34px; align-items: center; min-height: 52px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.plan-row-pending { opacity: .68; }
 .plan-order { color: var(--mint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .plan-row input { width: 100%; border: 0; color: white; background: transparent; }
 .plan-row input:focus { outline: none; box-shadow: 0 2px 0 var(--mint); }
@@ -235,6 +238,13 @@ button:disabled { cursor: wait; opacity: 0.58; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 [hidden] { display: none !important; }
+
+@keyframes pending-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
+}
 
 @media (max-width: 980px) {
   .workspace { grid-template-columns: 1fr; }

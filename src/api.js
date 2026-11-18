@@ -7,6 +7,14 @@ export function normalizeTasks(value) {
     .filter(Boolean);
 }
 
+export function createDraftPlan(tasks, timestamp = Date.now()) {
+  return tasks.map((title, index) => ({
+    id: `draft-${timestamp}-${index}`,
+    title,
+    completed: false
+  }));
+}
+
 function buildInitialPlan(upcomingTasks) {
   return upcomingTasks.slice(0, 5).map((title, index) => ({
     id: `plan-${Date.now()}-${index}`,
@@ -60,7 +68,14 @@ export function createHttpApi(baseUrl, fetcher = fetch) {
     });
 
     if (!response.ok) {
-      throw new Error(`요청을 처리하지 못했습니다. (${response.status})`);
+      let detail = "";
+      try {
+        const errorBody = await response.json();
+        detail = typeof errorBody.detail === "string" ? errorBody.detail : "";
+      } catch {
+        // 오류 응답이 JSON이 아니면 상태 코드 메시지를 사용합니다.
+      }
+      throw new Error(detail || `요청을 처리하지 못했습니다. (${response.status})`);
     }
     return response.json();
   };
