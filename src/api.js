@@ -15,6 +15,10 @@ export function createDraftPlan(tasks, timestamp = Date.now()) {
   }));
 }
 
+export function resolveInitialPlan(agentPlan, draftPlan) {
+  return Array.isArray(agentPlan) && agentPlan.length > 0 ? agentPlan : draftPlan;
+}
+
 function buildInitialPlan(upcomingTasks) {
   return upcomingTasks.slice(0, 5).map((title, index) => ({
     id: `plan-${Date.now()}-${index}`,

@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDraftPlan, createHttpApi, normalizeTasks } from "../src/api.js";
+import {
+  createDraftPlan,
+  createHttpApi,
+  normalizeTasks,
+  resolveInitialPlan
+} from "../src/api.js";
 
 test("normalizeTasks trims lines and removes empty items", () => {
   assert.deepEqual(normalizeTasks("  첫 업무  \n\n- 두 번째 업무\n• 세 번째 업무"), [
@@ -36,6 +41,13 @@ test("createDraftPlan immediately maps upcoming work", () => {
     { id: "draft-123-0", title: "API 구현", completed: false },
     { id: "draft-123-1", title: "배포 확인", completed: false }
   ]);
+});
+
+test("resolveInitialPlan preserves drafted work when Agent returns no plan", () => {
+  const draftPlan = createDraftPlan(["API 구현", "배포 확인"], 123);
+
+  assert.equal(resolveInitialPlan([], draftPlan), draftPlan);
+  assert.equal(resolveInitialPlan(undefined, draftPlan), draftPlan);
 });
 
 test("HTTP API surfaces backend error detail", async () => {

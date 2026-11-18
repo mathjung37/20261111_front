@@ -1,4 +1,10 @@
-import { createDemoApi, createDraftPlan, createHttpApi, normalizeTasks } from "./api.js";
+import {
+  createDemoApi,
+  createDraftPlan,
+  createHttpApi,
+  normalizeTasks,
+  resolveInitialPlan
+} from "./api.js";
 
 const config = window.APP_CONFIG ?? { API_BASE_URL: "http://localhost:8000", DEMO_MODE: true };
 const api = config.DEMO_MODE ? createDemoApi() : createHttpApi(config.API_BASE_URL);
@@ -136,7 +142,7 @@ function renderPlan() {
 function updatePlanSummary() {
   const count = state.plan.filter((task) => task.title.trim()).length;
   elements.planSummary.textContent = `${count}개의 할 일`;
-  elements.finalizePlan.disabled = count === 0;
+  elements.finalizePlan.disabled = count === 0 || !state.sessionId || state.isLoading;
 }
 
 function openPlanner() {
@@ -183,8 +189,8 @@ elements.workForm.addEventListener("submit", async (event) => {
   try {
     const result = await api.createSession({ completedTasks, upcomingTasks });
     state.sessionId = result.sessionId;
-    state.plan = result.plan ?? [];
     state.isLoading = false;
+    state.plan = resolveInitialPlan(result.plan, state.plan);
     pendingMessage.remove();
     appendMessage("assistant", result.assistantMessage);
     renderPlan();
